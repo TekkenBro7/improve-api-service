@@ -1,13 +1,18 @@
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import AsyncGenerator, Optional
+from typing import Optional
 
 import uvicorn
 from fastapi import Depends, FastAPI, status
 from sqlalchemy import insert, select, update
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.db_models import Base, Transaction, User, UserBalance
+from src.database.models.transaction import Transaction
+from src.database.models.user import User, UserBalance
+from src.database.repositories.report_repository import ReportRepository
+from src.database.repositories.transaction_repository import TransactionRepository
+from src.database.repositories.user_repository import UserRepository
+from src.database.session import create_db_and_tables, get_async_session
 from src.exceptions import (
     BadRequestDataException,
     CreateTransactionForBlockedUserException,
@@ -33,29 +38,6 @@ from src.python_models import (
     UserModel,
     UserStatusEnum,
 )
-from src.queries import (
-    get_not_rollbacked_deposit_amount,
-    get_not_rollbacked_transactions_count,
-    get_not_rollbacked_withdraw_amount,
-    get_registered_and_deposit_users_count,
-    get_registered_and_not_rollbacked_deposit_users_count,
-    get_registered_users_count,
-    get_transactions_count,
-)
-
-engine = create_async_engine("sqlite+aiosqlite:///db.sqlite3")
-async_session_maker = async_sessionmaker(engine, expire_on_commit=False)
-
-
-async def create_db_and_tables() -> None:
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
-
-async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
-    async with async_session_maker() as session:
-        yield session
-
 
 app = FastAPI()
 
@@ -416,33 +398,40 @@ async def patch_rollback_transaction(
 async def get_transaction_analysis(
     session: AsyncSession = Depends(get_async_session),
 ) -> list[dict]:
+    user_repo = UserRepository(session)
+    tx_repo = TransactionRepository(session)
+    report_repo = ReportRepository(session)
+
     dt_gt = datetime.utcnow().date() - timedelta(weeks=1) + timedelta(days=1)
     dt_lt = datetime.utcnow().date()
     results = []
     for i in range(52):
-        registered_users_count = await get_registered_users_count(
-            session, dt_gt=dt_gt, dt_lt=dt_lt
+        registered_users_count = await user_repo.count_registered_between(dt_gt, dt_lt)
+
+        registered_and_deposit_users_count = (
+            await report_repo.count_users_with_deposit_between(dt_from=dt_gt, dt_to=dt_lt)
         )
-        registered_and_deposit_users_count = await get_registered_and_deposit_users_count(
-            session, dt_gt=dt_gt, dt_lt=dt_lt
-        )
+
         registered_and_not_rollbacked_deposit_users_count = (
-            await get_registered_and_not_rollbacked_deposit_users_count(
-                session, dt_gt=dt_gt, dt_lt=dt_lt
+            await report_repo.count_users_with_non_rollbacked_deposits(
+                dt_from=dt_gt, dt_to=dt_lt
             )
         )
-        not_rollbacked_deposit_amount = await get_not_rollbacked_deposit_amount(
-            session, dt_gt=dt_gt, dt_lt=dt_lt
+
+        not_rollbacked_deposit_amount = await tx_repo.get_total_amount_between(
+            dt_from=dt_gt, dt_to=dt_lt, deposits_only=True, exclude_rollbacked=True
         )
-        not_rollbacked_withdraw_amount = await get_not_rollbacked_withdraw_amount(
-            session, dt_gt=dt_gt, dt_lt=dt_lt
+
+        not_rollbacked_withdraw_amount = await tx_repo.get_total_amount_between(
+            dt_from=dt_gt, dt_to=dt_lt, withdraws_only=True, exclude_rollbacked=True
         )
-        transactions_count = await get_transactions_count(
-            session, dt_gt=dt_gt, dt_lt=dt_lt
+
+        transactions_count = await tx_repo.count_transactions_between(dt_gt, dt_lt)
+
+        not_rollbacked_transactions_count = await tx_repo.count_transactions_between(
+            dt_gt, dt_lt, exclude_rollbacked=True
         )
-        not_rollbacked_transactions_count = await get_not_rollbacked_transactions_count(
-            session, dt_gt=dt_gt, dt_lt=dt_lt
-        )
+
         result = {
             "start_date": dt_gt,
             "end_date": dt_lt,

@@ -1,9 +1,7 @@
 from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String, UniqueConstraint
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-
-class Base(DeclarativeBase):
-    pass
+from src.database.base import Base
 
 
 class User(Base):
@@ -32,14 +30,3 @@ class UserBalance(Base):
     created: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
 
     owner: Mapped["User"] = relationship("User", back_populates="user_balance")
-
-
-class Transaction(Base):
-    __tablename__ = "transaction"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[int] = mapped_column(Integer, nullable=False)
-    currency: Mapped[str] = mapped_column(String, nullable=True)
-    amount: Mapped[Numeric] = mapped_column(Numeric, nullable=True)
-    status: Mapped[str] = mapped_column(String, nullable=True)
-    created: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
