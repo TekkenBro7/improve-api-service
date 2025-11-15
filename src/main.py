@@ -12,7 +12,7 @@ from src.database.models.user import User, UserBalance
 from src.database.repositories.report_repository import ReportRepository
 from src.database.repositories.transaction_repository import TransactionRepository
 from src.database.repositories.user_repository import UserRepository
-from src.database.session import create_db_and_tables, get_async_session
+from src.database.session import get_async_session
 from src.exceptions import (
     BadRequestDataException,
     CreateTransactionForBlockedUserException,
@@ -40,11 +40,6 @@ from src.python_models import (
 )
 
 app = FastAPI()
-
-
-@app.on_event("startup")
-async def on_startup(session: AsyncSession = Depends(get_async_session)) -> None:
-    await create_db_and_tables()
 
 
 @app.get(

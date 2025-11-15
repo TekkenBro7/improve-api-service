@@ -20,6 +20,9 @@ alembic = "^1.17.1"
 redis = "^7.0.1"
 dramatiq = "^1.18.0"
 pydantic = "^2.12.4"
+asyncpg = "^0.30.0"
+python-dotenv = "^1.2.1"
+psycopg2-binary = "^2.9.11"
 
 
 [tool.poetry.group.dev.dependencies]
