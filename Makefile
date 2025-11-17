@@ -28,6 +28,6 @@ lint:
 	$(POETRY) flake8 .
 	$(POETRY) mypy .
 
-seed:
+seed_data:
 	@echo "$(GREEN)Seeding database...$(NC)"
 	$(POETRY) python scripts/seed_db.py

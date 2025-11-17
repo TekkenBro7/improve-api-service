@@ -17,4 +17,4 @@ class TransactionModel(BaseModel):
     currency: Optional[CurrencyEnum] = None
     amount: Optional[float] = None
     status: Optional[TransactionStatusEnum] = None
-    created: Optional[datetime] = None
+    created_at: Optional[datetime] = None

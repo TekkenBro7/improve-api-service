@@ -37,8 +37,8 @@ class TransactionRepository(BaseRepository):
             int: Total number of transactions matching the criteria.
         """
         q = select(func.count(Transaction.id)).where(
-            (func.date(Transaction.created) >= dt_from)
-            & (func.date(Transaction.created) <= dt_to)
+            (func.date(Transaction.created_at) >= dt_from)
+            & (func.date(Transaction.created_at) <= dt_to)
         )
         if exclude_rollbacked:
             q = q.where(Transaction.status != "ROLLBACKED")
@@ -61,8 +61,8 @@ class TransactionRepository(BaseRepository):
             list[Transaction]: List of Transaction objects matching the criteria.
         """
         q = select(Transaction).where(
-            (func.date(Transaction.created) >= dt_from)
-            & (func.date(Transaction.created) <= dt_to)
+            (func.date(Transaction.created_at) >= dt_from)
+            & (func.date(Transaction.created_at) <= dt_to)
         )
         if exclude_rollbacked:
             q = q.where(Transaction.status != "ROLLBACKED")
@@ -92,8 +92,8 @@ class TransactionRepository(BaseRepository):
             Decimal: Total transaction amount converted to USD.
         """
         q = select(Transaction).where(
-            (func.date(Transaction.created) >= dt_from)
-            & (func.date(Transaction.created) <= dt_to)
+            (func.date(Transaction.created_at) >= dt_from)
+            & (func.date(Transaction.created_at) <= dt_to)
         )
 
         if deposits_only:

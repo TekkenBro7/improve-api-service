@@ -19,7 +19,8 @@ class UserRepository(BaseRepository):
             int: Total number of users registered between dt_from and dt_to.
         """
         q = select(func.count(User.id)).where(
-            (func.date(User.created) >= dt_from) & (func.date(User.created) <= dt_to)
+            (func.date(User.created_at) >= dt_from)
+            & (func.date(User.created_at) <= dt_to)
         )
         result = await self.session.execute(q)
         return result.scalar_one()
@@ -36,7 +37,8 @@ class UserRepository(BaseRepository):
             list[User]: List of User objects registered between dt_from and dt_to.
         """
         q = select(User).where(
-            (func.date(User.created) >= dt_from) & (func.date(User.created) <= dt_to)
+            (func.date(User.created_at) >= dt_from)
+            & (func.date(User.created_at) <= dt_to)
         )
         result = await self.session.execute(q)
         return list(result.scalars().all())
