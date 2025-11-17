@@ -7,6 +7,7 @@ from fastapi import Depends, FastAPI, status
 from sqlalchemy import insert, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.core.enums import CurrencyEnum, TransactionStatusEnum, UserStatusEnum
 from src.database.models.transaction import Transaction
 from src.database.models.user import User, UserBalance
 from src.database.repositories.report_repository import ReportRepository
@@ -26,17 +27,16 @@ from src.exceptions import (
     UserAlreadyExistsException,
     UserNotExistsException,
 )
-from src.python_models import (
-    CurrencyEnum,
+from src.schemas.transaction import (
     RequestTransactionModel,
+    TransactionModel,
+)
+from src.schemas.user import (
     RequestUserModel,
     RequestUserUpdateModel,
     ResponseUserBalanceModel,
     ResponseUserModel,
-    TransactionModel,
-    TransactionStatusEnum,
     UserModel,
-    UserStatusEnum,
 )
 
 app = FastAPI()

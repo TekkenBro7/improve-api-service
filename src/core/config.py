@@ -5,6 +5,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+class BaseConfig:
+    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
+
+
 class PostgresConfig:
     HOST: str = os.getenv("POSTGRES_HOST", "localhost")
     PORT: str = os.getenv("POSTGRES_PORT", "5432")
@@ -20,4 +24,5 @@ class PostgresConfig:
         )
 
 
+base_config = BaseConfig()
 postgres_config = PostgresConfig()

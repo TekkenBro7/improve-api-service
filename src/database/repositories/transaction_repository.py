@@ -3,9 +3,9 @@ from decimal import Decimal
 
 from sqlalchemy import func, select
 
+from src.core.enums import CurrencyEnum
 from src.database.models.transaction import Transaction
 from src.database.repositories.base_repository import BaseRepository
-from src.python_models import CurrencyEnum
 
 EXCHANGE_RATES_TO_USD = {
     CurrencyEnum.USD: 1,
