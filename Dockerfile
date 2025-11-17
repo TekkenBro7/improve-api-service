@@ -6,7 +6,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 ENV POETRY_NO_INTERACTION=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app
 
 WORKDIR /app
 

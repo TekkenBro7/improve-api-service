@@ -7,6 +7,7 @@ from fastapi import Depends, FastAPI, status
 from sqlalchemy import insert, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.core.enums import CurrencyEnum, TransactionStatusEnum, UserStatusEnum
 from src.database.models.transaction import Transaction
 from src.database.models.user import User, UserBalance
 from src.database.repositories.report_repository import ReportRepository
@@ -26,17 +27,16 @@ from src.exceptions import (
     UserAlreadyExistsException,
     UserNotExistsException,
 )
-from src.python_models import (
-    CurrencyEnum,
+from src.schemas.transaction import (
     RequestTransactionModel,
+    TransactionModel,
+)
+from src.schemas.user import (
     RequestUserModel,
     RequestUserUpdateModel,
     ResponseUserBalanceModel,
     ResponseUserModel,
-    TransactionModel,
-    TransactionStatusEnum,
     UserModel,
-    UserStatusEnum,
 )
 
 app = FastAPI()
@@ -53,7 +53,7 @@ async def get_users(
     user_status: Optional[str] = None,
     session: AsyncSession = Depends(get_async_session),
 ) -> list[ResponseUserModel]:
-    q = select(User).order_by(User.created.desc())
+    q = select(User).order_by(User.created_at.desc())
     if user_id is not None:
         q = q.where(User.id == user_id)
     if email is not None:
@@ -65,14 +65,16 @@ async def get_users(
     results = []
     for user in users:
         created_dt: datetime = (
-            user.created if isinstance(user.created, datetime) else datetime.utcnow()
+            user.created_at
+            if isinstance(user.created_at, datetime)
+            else datetime.utcnow()
         )
 
         result = ResponseUserModel(
             id=user.id,
             email=user.email,
             status=UserStatusEnum(user.status),
-            created=created_dt,
+            created_at=created_dt,
         )
         balances_result = await session.execute(
             select(UserBalance).where(UserBalance.user_id == user.id)
@@ -94,7 +96,7 @@ async def get_users(
 
     return sorted(
         results,
-        key=lambda x: x.created if x.created is not None else datetime.min,
+        key=lambda x: x.created_at if x.created_at is not None else datetime.min,
         reverse=True,
     )
 
@@ -118,13 +120,13 @@ async def post_user(
             status_code=status.HTTP_409_CONFLICT,
             detail="User with email=`{0}` already exists".format(user.email),
         )
-    db_user = User(email=user.email, status="ACTIVE", created=datetime.utcnow())
+    db_user = User(email=user.email, status="ACTIVE", created_at=datetime.utcnow())
     session.add(db_user)
     await session.commit()
     currencies = list({str(x) for x in CurrencyEnum})
     for currency in currencies:
         user_balance = UserBalance(
-            user_id=db_user.id, currency=currency, amount=0, created=datetime.utcnow()
+            user_id=db_user.id, currency=currency, amount=0, created_at=datetime.utcnow()
         )
         session.add(user_balance)
         await session.commit()
@@ -133,14 +135,16 @@ async def post_user(
     result = user_result.scalar_one()
 
     created_dt: datetime = (
-        result.created if isinstance(result.created, datetime) else datetime.utcnow()
+        result.created_at
+        if isinstance(result.created_at, datetime)
+        else datetime.utcnow()
     )
 
     return UserModel(
         id=result.id,
         email=result.email,
         status=UserStatusEnum(result.status),
-        created=created_dt,
+        created_at=created_dt,
     )
 
 
@@ -180,14 +184,14 @@ async def patch_user(
     changed_user = user_result.scalar_one()
 
     created_dt = (
-        changed_user.created if isinstance(changed_user.created, datetime) else None
+        changed_user.created_at if isinstance(changed_user.created_at, datetime) else None
     )
 
     result = UserModel(
         id=changed_user.id,
         email=changed_user.email,
         status=UserStatusEnum(changed_user.status),
-        created=created_dt,
+        created_at=created_dt,
     )
     return result
 
@@ -201,7 +205,7 @@ async def get_transactions(
     user_id: Optional[int] = None,
     session: AsyncSession = Depends(get_async_session),
 ) -> list[TransactionModel]:
-    q = select(Transaction).order_by(Transaction.created.desc())
+    q = select(Transaction).order_by(Transaction.created_at.desc())
     if user_id:
         q = q.where(Transaction.user_id == user_id)
 
@@ -209,7 +213,7 @@ async def get_transactions(
     transactions = transactions_result.scalars().all()
     results = []
     for t in transactions:
-        created_dt = t.created if isinstance(t.created, datetime) else None
+        created_dt = t.created_at if isinstance(t.created_at, datetime) else None
 
         result = TransactionModel(
             id=t.id,
@@ -217,7 +221,7 @@ async def get_transactions(
             currency=CurrencyEnum(t.currency),
             amount=float(str(t.amount)),
             status=TransactionStatusEnum(t.status),
-            created=created_dt,
+            created_at=created_dt,
         )
         results.append(result)
     return results
@@ -295,7 +299,7 @@ async def post_transaction(
                 "currency": transaction.currency,
                 "amount": transaction.amount,
                 "status": "PROCESSED",
-                "created": datetime.utcnow(),
+                "created_at": datetime.utcnow(),
             }
         )
     )

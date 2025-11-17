@@ -1,23 +1,22 @@
-from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String, UniqueConstraint
+from sqlalchemy import ForeignKey, Integer, Numeric, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.database.base import Base
+from src.database.models.base import BaseModel
 
 
-class User(Base):
+class User(BaseModel):
     __tablename__ = "user"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     email: Mapped[str] = mapped_column(String, nullable=True, unique=True)
     status: Mapped[str] = mapped_column(String, nullable=True)
-    created: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
 
     user_balance: Mapped[list["UserBalance"]] = relationship(
         "UserBalance", back_populates="owner"
     )
 
 
-class UserBalance(Base):
+class UserBalance(BaseModel):
     __tablename__ = "user_balance"
     __table_args__ = (
         UniqueConstraint("user_id", "currency", name="user_balance_user_currency_unique"),
@@ -27,6 +26,5 @@ class UserBalance(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
     currency: Mapped[str] = mapped_column(String, nullable=True)
     amount: Mapped[Numeric] = mapped_column(Numeric, nullable=True)
-    created: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
 
     owner: Mapped["User"] = relationship("User", back_populates="user_balance")
