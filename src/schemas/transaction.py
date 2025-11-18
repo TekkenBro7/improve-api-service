@@ -18,3 +18,4 @@ class TransactionModel(BaseModel):
     amount: Optional[float] = None
     status: Optional[TransactionStatusEnum] = None
     created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None

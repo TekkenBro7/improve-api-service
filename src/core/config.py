@@ -7,6 +7,10 @@ load_dotenv()
 
 class BaseConfig:
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
+    HOST: str = os.getenv("APP_HOST", "0.0.0.0")
+    PORT: int = int(os.getenv("APP_PORT", 8000))
+    RELOAD: bool = os.getenv("APP_RELOAD", "True").lower() in ("true", "1")
+    AMOUNT_WEEKS_ANALYSE: int = 52
 
 
 class PostgresConfig:

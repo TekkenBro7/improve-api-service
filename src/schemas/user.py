@@ -24,6 +24,7 @@ class ResponseUserModel(BaseModel):
     email: Optional[str] = None
     status: Optional[UserStatusEnum] = None
     created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
     balances: Optional[list[ResponseUserBalanceModel]] = None
 
 
@@ -32,6 +33,7 @@ class UserModel(BaseModel):
     email: Optional[str] = None
     status: Optional[UserStatusEnum] = None
     created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
 
 class UserBalanceModel(BaseModel):
