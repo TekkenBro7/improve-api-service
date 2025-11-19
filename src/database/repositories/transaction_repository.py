@@ -1,7 +1,8 @@
 from datetime import date
 from decimal import Decimal
+from typing import Optional
 
-from sqlalchemy import func, select
+from sqlalchemy import func, insert, select, update
 
 from src.core.enums import CurrencyEnum
 from src.database.models.transaction import Transaction
@@ -115,3 +116,57 @@ class TransactionRepository(BaseRepository):
             total_amount += amount * rate
 
         return total_amount
+
+    async def get_transactions(self, user_id: Optional[int]) -> list[Transaction]:
+        query = select(Transaction).order_by(Transaction.created_at.desc())
+
+        if user_id is not None:
+            query = query.where(Transaction.user_id == user_id)
+
+        result = await self.session.execute(query)
+        return list(result.scalars().all())
+
+    async def create_transaction(
+        self,
+        user_id: int,
+        currency: str,
+        amount: float,
+        status: str,
+    ) -> Transaction:
+        db_transaction = (
+            insert(Transaction)
+            .values(
+                user_id=user_id,
+                currency=currency,
+                amount=amount,
+                status=status,
+            )
+            .returning(Transaction)
+        )
+
+        result = await self.session.execute(db_transaction)
+        await self.session.commit()
+
+        return result.scalar_one()
+
+    async def get_transaction_by_id(self, transaction_id: int) -> Optional[Transaction]:
+        result = await self.session.execute(
+            select(Transaction).where(Transaction.id == transaction_id)
+        )
+        return result.scalar_one_or_none()
+
+    async def update_transaction_status(
+        self,
+        transaction_id: int,
+        new_status: str,
+    ) -> Transaction:
+        q = (
+            update(Transaction)
+            .values(status=new_status)
+            .where(Transaction.id == transaction_id)
+            .returning(Transaction)
+        )
+
+        result = await self.session.execute(q)
+        await self.session.commit()
+        return result.scalar_one()
