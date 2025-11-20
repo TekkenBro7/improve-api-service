@@ -9,7 +9,23 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_started
     restart: unless-stopped      
+
+  worker:
+    build: .
+    container_name: improve_worker
+    env_file:
+      - .env
+    command: dramatiq src.worker.tasks
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    entrypoint: []
+    restart: unless-stopped
 
   db:
     image: postgres:16
@@ -27,6 +43,13 @@ services:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 10s
       retries: 3
+
+  redis:
+    image: redis:8
+    container_name: improve_redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
 
 volumes:
   db_data:

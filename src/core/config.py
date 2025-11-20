@@ -36,5 +36,17 @@ class PostgresConfig:
         )
 
 
+class RedisConfig:
+    HOST: str = os.getenv("REDIS_HOST", "redis")
+    PORT: int = int(os.getenv("REDIS_PORT", "6379"))
+    DB: int = int(os.getenv("REDIS_DB", "0"))
+
+    @property
+    def redis_url(self) -> str:
+        return f"redis://{self.HOST}:{self.PORT}/{self.DB}"
+
+
 base_config = BaseConfig()
 postgres_config = PostgresConfig()
+redis_config = RedisConfig()
+print(f"Connecting to Redis at: {redis_config.redis_url}")

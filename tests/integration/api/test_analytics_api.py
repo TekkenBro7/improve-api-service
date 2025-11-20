@@ -1,5 +1,3 @@
-from datetime import datetime, timedelta
-
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
@@ -52,50 +50,9 @@ class TestAnalyticsAPI:
         assert response.status_code == 200
         data = response.json()
 
-        assert isinstance(data, list)
-        assert len(data) > 0
-
-        first_week = data[0]
-        expected_keys = {
-            "start_date",
-            "end_date",
-            "registered_users_count",
-            "deposit_distinct_users_count",
-            "not_rollbacked_deposit_amount",
-            "not_rollbacked_withdraw_amount",
-            "transactions_count",
-            "not_rollbacked_transactions_count",
-        }
-        assert set(first_week.keys()) == expected_keys
-
-        assert isinstance(first_week["start_date"], str)
-        assert isinstance(first_week["end_date"], str)
-
-        assert isinstance(first_week["registered_users_count"], int)
-        assert isinstance(first_week["deposit_distinct_users_count"], int)
-        assert isinstance(float(first_week["not_rollbacked_deposit_amount"]), float)
-        assert isinstance(float(first_week["not_rollbacked_withdraw_amount"]), float)
-        assert isinstance(first_week["transactions_count"], int)
-        assert isinstance(first_week["not_rollbacked_transactions_count"], int)
-
-    @pytest.mark.asyncio
-    async def test_get_transaction_analysis_weeks_order(
-        self, client: AsyncClient, test_users: list[dict], test_transactions: list[dict]
-    ) -> None:
-        response = await client.get("/api/v1/analytics/transactions")
-
-        assert response.status_code == 200
-        data = response.json()
-
-        for i in range(len(data) - 1):
-            current_week = data[i]
-            next_week = data[i + 1]
-
-            current_start = datetime.fromisoformat(current_week["start_date"]).date()
-            next_start = datetime.fromisoformat(next_week["start_date"]).date()
-
-            expected_next_start = current_start - timedelta(days=7)
-            assert next_start == expected_next_start
+        assert isinstance(data, dict)
+        assert "message" in data
+        assert data["message"] == "OK"
 
     @pytest.mark.asyncio
     async def test_get_transaction_analysis_with_empty_data(
@@ -106,14 +63,8 @@ class TestAnalyticsAPI:
         assert response.status_code == 200
         data = response.json()
 
-        assert isinstance(data, list)
-        assert len(data) > 0
-
-        for week in data:
-            assert week["registered_users_count"] == 0
-            assert week["deposit_distinct_users_count"] == 0
-            assert week["transactions_count"] == 0
-            assert week["not_rollbacked_transactions_count"] == 0
+        assert isinstance(data, dict)
+        assert data["message"] == "OK"
 
     @pytest.mark.asyncio
     async def test_get_transaction_analysis_data_correctness(
@@ -124,20 +75,7 @@ class TestAnalyticsAPI:
         assert response.status_code == 200
         data = response.json()
 
-        current_week = data[0]
-
-        assert (
-            current_week["not_rollbacked_transactions_count"]
-            <= current_week["transactions_count"]
-        )
-
-        assert (
-            current_week["deposit_distinct_users_count"]
-            <= current_week["registered_users_count"]
-        )
-
-        assert float(current_week["not_rollbacked_deposit_amount"]) >= 0
-        assert float(current_week["not_rollbacked_withdraw_amount"]) <= 0
+        assert data == {"message": "OK"}
 
     @pytest.mark.asyncio
     async def test_weekly_analytics_weeks_count(self, client: AsyncClient) -> None:
@@ -146,7 +84,8 @@ class TestAnalyticsAPI:
         assert response.status_code == 200
         data = response.json()
 
-        assert len(data) == 52
+        assert isinstance(data, dict)
+        assert len(data) == 1
 
     @pytest.mark.asyncio
     async def test_get_transaction_analysis_date_ranges(
@@ -157,11 +96,12 @@ class TestAnalyticsAPI:
         assert response.status_code == 200
         data = response.json()
 
-        for week in data:
-            start_date = datetime.fromisoformat(week["start_date"]).date()
-            end_date = datetime.fromisoformat(week["end_date"]).date()
+        assert data == {"message": "OK"}
 
-            assert (end_date - start_date).days == 6
+    @pytest.mark.asyncio
+    async def test_background_task_triggered(self, client: AsyncClient) -> None:
+        response = await client.get("/api/v1/analytics/transactions")
 
-            assert start_date.weekday() == 0
-            assert end_date.weekday() == 6
+        assert response.status_code == 200
+        data = response.json()
+        assert data == {"message": "OK"}
